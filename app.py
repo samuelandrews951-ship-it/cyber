@@ -3,76 +3,62 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-# Page config
+# Page configuration
 st.set_page_config(page_title="Real-Time Cyber Attack Map", layout="wide")
 
-st.title("🌐 Real-Time Cyber-Attack Monitoring Map")
-st.write("Visualizing live cyber attacks across the globe")
+st.title("🛡️ Real-Time Cyber-Attack Map")
+st.write("Live visualization of global cyber attack activities")
 
-# Sidebar
+# Sidebar controls
 st.sidebar.header("⚙️ Control Panel")
-generate = st.sidebar.button("🚨 Generate Cyber Attack")
+generate = st.sidebar.button("🔄 Generate Attack Event")
 
 # Initialize session state
 if "attack_data" not in st.session_state:
     st.session_state.attack_data = pd.DataFrame(
-        columns=[
-            "Time", "Attack Type", "Country",
-            "Latitude", "Longitude", "Severity"
-        ]
+        columns=["Time", "Latitude", "Longitude", "Attack Type", "Severity"]
     )
 
-# Sample attack data
+# Attack types
 attack_types = ["DDoS", "Phishing", "Malware", "Ransomware", "Brute Force"]
-countries = {
-    "USA": [37.0902, -95.7129],
-    "India": [20.5937, 78.9629],
-    "China": [35.8617, 104.1954],
-    "Russia": [61.5240, 105.3188],
-    "Germany": [51.1657, 10.4515],
-    "UK": [55.3781, -3.4360]
-}
-severities = ["Low", "Medium", "High", "Critical"]
+severity_levels = ["Low", "Medium", "High"]
 
-# Generate attack
-if generate:
-    country = np.random.choice(list(countries.keys()))
-    lat, lon = countries[country]
-
-    new_attack = {
+# Generate attack data
+def generate_attack():
+    return {
         "Time": datetime.now().strftime("%H:%M:%S"),
+        "Latitude": np.random.uniform(-60, 60),
+        "Longitude": np.random.uniform(-180, 180),
         "Attack Type": np.random.choice(attack_types),
-        "Country": country,
-        "Latitude": lat + np.random.uniform(-1, 1),
-        "Longitude": lon + np.random.uniform(-1, 1),
-        "Severity": np.random.choice(severities)
+        "Severity": np.random.choice(severity_levels)
     }
 
+# Generate new attack event
+if generate:
+    new_attack = generate_attack()
     st.session_state.attack_data = pd.concat(
         [st.session_state.attack_data, pd.DataFrame([new_attack])],
         ignore_index=True
     )
 
-# Layout
-col1, col2 = st.columns([2, 1])
+# Display metrics
+col1, col2, col3 = st.columns(3)
+col1.metric("🌐 Total Attacks", len(st.session_state.attack_data))
+col2.metric("⚠️ High Severity",
+            len(st.session_state.attack_data[
+                st.session_state.attack_data["Severity"] == "High"
+            ]))
+col3.metric("🕒 Last Update",
+            st.session_state.attack_data["Time"].iloc[-1]
+            if len(st.session_state.attack_data) > 0 else "N/A")
 
-with col1:
-    st.subheader("🗺️ Live Cyber Attack Map")
-    if not st.session_state.attack_data.empty:
-        st.map(
-            st.session_state.attack_data[["Latitude", "Longitude"]]
-        )
-    else:
-        st.info("No attacks detected yet")
+# Map visualization
+st.subheader("🌍 Global Cyber Attack Map")
+if len(st.session_state.attack_data) > 0:
+    st.map(st.session_state.attack_data[["Latitude", "Longitude"]])
+else:
+    st.info("Click 'Generate Attack Event' to start")
 
-with col2:
-    st.subheader("📊 Recent Attacks")
-    st.dataframe(st.session_state.attack_data.tail(10), use_container_width=True)
-
-# Severity alert
-if not st.session_state.attack_data.empty:
-    last_severity = st.session_state.attack_data.iloc[-1]["Severity"]
-    if last_severity == "Critical":
-        st.error("🚨 Critical Cyber Attack Detected!")
-    elif last_severity == "High":
-        st.warning("⚠️ High Severity Cyber Attack Detected!")
+# Attack log
+st.subheader("📄 Attack Event Log")
+st.dataframe(st.session_state.attack_data)
