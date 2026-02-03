@@ -1,81 +1,102 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-from datetime import datetime
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Cyber Attack Map</title>
 
-# -------------------- PAGE CONFIG --------------------
-st.set_page_config(
-    page_title="Real-Time Cyber Attack Map",
-    layout="wide"
-)
+    <!-- Leaflet Map CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-st.title("🌐 Real-Time Cyber-Attack Map")
-st.write("Monitoring global cyber attacks in real time")
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            color: white;
+            text-align: center;
+        }
 
-# -------------------- SIDEBAR --------------------
-st.sidebar.header("Control Panel")
-generate_attack = st.sidebar.button("Generate Attack")
+        h1 {
+            margin: 15px;
+        }
 
-# -------------------- SESSION STATE --------------------
-if "attacks" not in st.session_state:
-    st.session_state.attacks = pd.DataFrame(
-        columns=["Time", "Attack Type", "Country", "Latitude", "Longitude", "Severity"]
-    )
+        #map {
+            height: 450px;
+            width: 90%;
+            margin: auto;
+            border-radius: 10px;
+        }
 
-# -------------------- STATIC DATA --------------------
-attack_types = ["DDoS", "Phishing", "Malware", "Ransomware", "Brute Force"]
-severity_levels = ["Low", "Medium", "High", "Critical"]
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
 
-country_locations = {
-    "India": (20.5937, 78.9629),
-    "USA": (37.0902, -95.7129),
-    "UK": (55.3781, -3.4360),
-    "Germany": (51.1657, 10.4515),
-    "China": (35.8617, 104.1954),
-    "Russia": (61.5240, 105.3188)
-}
+        th, td {
+            border: 1px solid #38bdf8;
+            padding: 10px;
+        }
 
-# -------------------- GENERATE ATTACK --------------------
-if generate_attack:
-    country = np.random.choice(list(country_locations.keys()))
-    lat, lon = country_locations[country]
+        th {
+            background-color: #0284c7;
+        }
+    </style>
+</head>
+<body>
 
-    new_attack = {
-        "Time": datetime.now().strftime("%H:%M:%S"),
-        "Attack Type": np.random.choice(attack_types),
-        "Country": country,
-        "Latitude": lat + np.random.uniform(-1, 1),
-        "Longitude": lon + np.random.uniform(-1, 1),
-        "Severity": np.random.choice(severity_levels)
-    }
+<h1>🌐 Real-Time Cyber Attack Map</h1>
+<p>Simulated global cyber attack visualization (CRT Demo)</p>
 
-    st.session_state.attacks = pd.concat(
-        [st.session_state.attacks, pd.DataFrame([new_attack])],
-        ignore_index=True
-    )
+<div id="map"></div>
 
-# -------------------- LAYOUT --------------------
-col1, col2 = st.columns([2, 1])
+<table>
+    <tr>
+        <th>Time</th>
+        <th>Attack Type</th>
+        <th>Country</th>
+        <th>Severity</th>
+    </tr>
+    <tbody id="attackTable"></tbody>
+</table>
 
-with col1:
-    st.subheader("🗺️ Cyber Attack Map")
-    if not st.session_state.attacks.empty:
-        st.map(st.session_state.attacks[["Latitude", "Longitude"]])
-    else:
-        st.info("No cyber attacks detected")
+<script>
+    // Initialize map
+    var map = L.map('map').setView([20, 0], 2);
 
-with col2:
-    st.subheader("📋 Recent Attacks")
-    st.dataframe(
-        st.session_state.attacks.tail(10),
-        use_container_width=True
-    )
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data © OpenStreetMap'
+    }).addTo(map);
 
-# -------------------- ALERT SYSTEM --------------------
-if not st.session_state.attacks.empty:
-    severity = st.session_state.attacks.iloc[-1]["Severity"]
+    // Sample attack data
+    var attacks = [
+        {time: "10:30:15", type: "DDoS", country: "India", lat: 20.59, lon: 78.96, severity: "High"},
+        {time: "10:32:40", type: "Phishing", country: "USA", lat: 37.09, lon: -95.71, severity: "Medium"},
+        {time: "10:35:10", type: "Malware", country: "Germany", lat: 51.16, lon: 10.45, severity: "Critical"}
+    ];
 
-    if severity == "Critical":
-        st.error("🚨 Critical Cyber Attack Detected")
-    elif severity == "High":
-        st.warning("⚠️ High Severity Cyber Attack Detected")
+    // Plot attacks
+    attacks.forEach(a => {
+        L.circleMarker([a.lat, a.lon], {
+            radius: 8,
+            color: "red"
+        }).addTo(map)
+        .bindPopup(
+            "Attack: " + a.type +
+            "<br>Country: " + a.country +
+            "<br>Severity: " + a.severity
+        );
+
+        document.getElementById("attackTable").innerHTML +=
+            `<tr>
+                <td>${a.time}</td>
+                <td>${a.type}</td>
+                <td>${a.country}</td>
+                <td>${a.severity}</td>
+            </tr>`;
+    });
+</script>
+
+</body>
+</html>
