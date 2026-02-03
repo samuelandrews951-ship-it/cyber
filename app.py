@@ -3,62 +3,79 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-# Page configuration
-st.set_page_config(page_title="Real-Time Cyber Attack Map", layout="wide")
+# -------------------- PAGE CONFIG --------------------
+st.set_page_config(
+    page_title="Real-Time Cyber Attack Map",
+    layout="wide"
+)
 
-st.title("🛡️ Real-Time Cyber-Attack Map")
-st.write("Live visualization of global cyber attack activities")
+st.title("🌐 Real-Time Cyber-Attack Map")
+st.write("Monitoring global cyber attacks in real time")
 
-# Sidebar controls
-st.sidebar.header("⚙️ Control Panel")
-generate = st.sidebar.button("🔄 Generate Attack Event")
+# -------------------- SIDEBAR --------------------
+st.sidebar.header("Control Panel")
+generate_attack = st.sidebar.button("Generate Attack")
 
-# Initialize session state
-if "attack_data" not in st.session_state:
-    st.session_state.attack_data = pd.DataFrame(
-        columns=["Time", "Latitude", "Longitude", "Attack Type", "Severity"]
+# -------------------- SESSION STATE --------------------
+if "attacks" not in st.session_state:
+    st.session_state.attacks = pd.DataFrame(
+        columns=["Time", "Attack Type", "Country", "Latitude", "Longitude", "Severity"]
     )
 
-# Attack types
+# -------------------- STATIC DATA --------------------
 attack_types = ["DDoS", "Phishing", "Malware", "Ransomware", "Brute Force"]
-severity_levels = ["Low", "Medium", "High"]
+severity_levels = ["Low", "Medium", "High", "Critical"]
 
-# Generate attack data
-def generate_attack():
-    return {
+country_locations = {
+    "India": (20.5937, 78.9629),
+    "USA": (37.0902, -95.7129),
+    "UK": (55.3781, -3.4360),
+    "Germany": (51.1657, 10.4515),
+    "China": (35.8617, 104.1954),
+    "Russia": (61.5240, 105.3188)
+}
+
+# -------------------- GENERATE ATTACK --------------------
+if generate_attack:
+    country = np.random.choice(list(country_locations.keys()))
+    lat, lon = country_locations[country]
+
+    new_attack = {
         "Time": datetime.now().strftime("%H:%M:%S"),
-        "Latitude": np.random.uniform(-60, 60),
-        "Longitude": np.random.uniform(-180, 180),
         "Attack Type": np.random.choice(attack_types),
+        "Country": country,
+        "Latitude": lat + np.random.uniform(-1, 1),
+        "Longitude": lon + np.random.uniform(-1, 1),
         "Severity": np.random.choice(severity_levels)
     }
 
-# Generate new attack event
-if generate:
-    new_attack = generate_attack()
-    st.session_state.attack_data = pd.concat(
-        [st.session_state.attack_data, pd.DataFrame([new_attack])],
+    st.session_state.attacks = pd.concat(
+        [st.session_state.attacks, pd.DataFrame([new_attack])],
         ignore_index=True
     )
 
-# Display metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("🌐 Total Attacks", len(st.session_state.attack_data))
-col2.metric("⚠️ High Severity",
-            len(st.session_state.attack_data[
-                st.session_state.attack_data["Severity"] == "High"
-            ]))
-col3.metric("🕒 Last Update",
-            st.session_state.attack_data["Time"].iloc[-1]
-            if len(st.session_state.attack_data) > 0 else "N/A")
+# -------------------- LAYOUT --------------------
+col1, col2 = st.columns([2, 1])
 
-# Map visualization
-st.subheader("🌍 Global Cyber Attack Map")
-if len(st.session_state.attack_data) > 0:
-    st.map(st.session_state.attack_data[["Latitude", "Longitude"]])
-else:
-    st.info("Click 'Generate Attack Event' to start")
+with col1:
+    st.subheader("🗺️ Cyber Attack Map")
+    if not st.session_state.attacks.empty:
+        st.map(st.session_state.attacks[["Latitude", "Longitude"]])
+    else:
+        st.info("No cyber attacks detected")
 
-# Attack log
-st.subheader("📄 Attack Event Log")
-st.dataframe(st.session_state.attack_data)
+with col2:
+    st.subheader("📋 Recent Attacks")
+    st.dataframe(
+        st.session_state.attacks.tail(10),
+        use_container_width=True
+    )
+
+# -------------------- ALERT SYSTEM --------------------
+if not st.session_state.attacks.empty:
+    severity = st.session_state.attacks.iloc[-1]["Severity"]
+
+    if severity == "Critical":
+        st.error("🚨 Critical Cyber Attack Detected")
+    elif severity == "High":
+        st.warning("⚠️ High Severity Cyber Attack Detected")
